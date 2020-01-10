@@ -1,0 +1,73 @@
+version: "3.2"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    restart: always
+    networks:
+      - rabbit-net
+    environment:
+      - RABBITMQ_NODENAME=rabbit@rabbitmq
+      - RABBITMQ_DEFAULT_USER=user 
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5672:5672/tcp"
+      - "15672:15672/tcp"
+
+  postgres:
+    image: postgres:12-alpine
+    restart: always
+    shm_size: 256M
+    hostname: postgres
+    networks:
+      - database
+    volumes:
+      - "./volumes/postgres:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_USER: rabbit
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: messages
+    ports:
+      - "5433:5432/tcp"
+
+  # database migration managment tool
+  goose:
+    build:
+      # allow copy sql schema files from worker
+      context: ./database/
+      dockerfile: ./Dockerfile
+    networks:
+      - database
+    environment:
+      START_SLEEP: 30
+      POSTGRES: "user=rabbit password=example dbname=messages sslmode=disable host=postgres port=5432"
+
+  acceptor:
+    build:
+      context: ./src/
+      dockerfile: ./acceptor/Dockerfile
+    restart: always
+    networks:
+      - rabbit-net
+    ports:
+      - "8080:8080/tcp"
+    volumes:
+      - "./volumes/acceptor-config:/root/acceptor-config:ro"
+
+  worker:
+    build:
+      context: ./src/
+      dockerfile: ./worker/Dockerfile
+    restart: always
+    networks:
+      - rabbit-net
+      - database
+    volumes:
+      - "./volumes/worker-config:/root/worker-config:ro"
+    depends_on:
+      - goose
+      - postgres
+
+networks:
+  rabbit-net:
+  database:

@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "packages": [
+    {
+      "name": "messages",
+      "emit_json_tags": true,
+      "emit_prepared_queries": true,
+      "path": "./src/common/messages",
+      "queries": "./database/sql/messages/query",
+      "schema": "./database/sql/messages/schema"
+    },
+    {
+      "name": "db",
+      "emit_json_tags": true,
+      "emit_prepared_queries": false,
+      "path": "./src/common/db",
+      "queries": "./database/sql/db/query/",
+      "schema": "./database/sql/db/schema/"
+    }
+  ]
+}
