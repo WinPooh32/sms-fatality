@@ -4,6 +4,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.8-management-alpine
     restart: always
+    volumes:
+    - "./volumes/rabbitmq/:/var/lib/rabbitmq/mnesia/rabbit@rabbitmq"
     networks:
       - rabbit-net
     environment:
