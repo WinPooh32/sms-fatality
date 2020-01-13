@@ -38,17 +38,19 @@ func validateVersion(ctx context.Context, dbConn *sql.DB) error {
 	return nil
 }
 
-func connect(opts options.OptionsWorker) (*sql.DB, broker.Consumer, error){
+func connect(opts options.OptionsWorker) (*sql.DB, broker.Consumer, error) {
 	log.Printf("connecting to database at %s:%d", opts.DbHost, opts.DbPort)
 	pg, err := sql.Open("postgres",
 		formats.Postgres(
-			opts.DbHost,
-			opts.DbPort,
-			opts.DbName,
-			opts.DbUser,
-			opts.DbPassword,
-			opts.DbSsl,
-			opts.DbTimeout,
+			formats.ParamsPostgres{
+				Host:       opts.DbHost,
+				Port:       opts.DbPort,
+				DbName:     opts.DbName,
+				DbUser:     opts.DbUser,
+				DbPassword: opts.DbPassword,
+				DbSsl:      opts.DbSsl,
+				Timeout:    opts.DbTimeout,
+			},
 		),
 	)
 	if err != nil {
@@ -58,11 +60,13 @@ func connect(opts options.OptionsWorker) (*sql.DB, broker.Consumer, error){
 	log.Printf("connecting to rabbitMQ at %s:%d", opts.MqHost, opts.MqPort)
 	consumer, err := broker.ConnectAsConsumer(
 		formats.AMQP(
-			opts.MqHost,
-			opts.MqPort,
-			opts.MqUser,
-			opts.MqPassword,
-			opts.MqTimeout,
+			formats.ParamsAMQP{
+				Host:     opts.MqHost,
+				Port:     opts.MqPort,
+				User:     opts.MqUser,
+				Password: opts.MqPassword,
+				Timeout:  opts.MqTimeout,
+			},
 		),
 	)
 	if err != nil {
@@ -72,20 +76,20 @@ func connect(opts options.OptionsWorker) (*sql.DB, broker.Consumer, error){
 	return pg, consumer, nil
 }
 
-func init(){
+func init() {
 	// service should be binded to one cpu core for better performance
 	// 1 service per core
 	runtime.GOMAXPROCS(1)
 }
 
-func main(){
+func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go sysenv.CatchSignals(ctx, cancel)
 
 	// read options from config file or app's arguments
 	opts, err := options.ReadWorker()
-	if err != nil{
+	if err != nil {
 		log.Fatalln("options.ReadWorker(): ", err)
 	}
 
@@ -96,8 +100,7 @@ serviceLoop:
 			log.Println("service failed to connect: ", err)
 		} else {
 			err = validateVersion(ctx, connPg)
-			fatality.Panic(err);
-
+			fatality.Panic(err)
 			log.Println("started to process messages")
 			work(ctx, connPg, consumer)
 

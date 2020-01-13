@@ -17,10 +17,10 @@ import (
 
 const httpMaxHeaderBytes = 1 << 20
 
-func serveInBackground(ctx context.Context, cancel context.CancelFunc, opts options.OptionsAcceptor) (*http.Server, error) {
-	listener, err := net.ListenTCP (
+func serveInBackground(ctx context.Context, opts options.OptionsAcceptor) (*http.Server, error) {
+	listener, err := net.ListenTCP(
 		"tcp",
-		&net.TCPAddr {
+		&net.TCPAddr{
 			IP:   net.ParseIP(opts.HttpIP),
 			Port: int(opts.HttpPort),
 			Zone: "",
@@ -32,7 +32,7 @@ func serveInBackground(ctx context.Context, cancel context.CancelFunc, opts opti
 
 	srv := &http.Server{
 		Handler:        registerHandlers(http.NewServeMux()),
-		ReadTimeout:    time.Duration(opts.HttpReadTimeout)  * time.Second,
+		ReadTimeout:    time.Duration(opts.HttpReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(opts.HttpWriteTimeout) * time.Second,
 		MaxHeaderBytes: httpMaxHeaderBytes,
 		BaseContext: func(l net.Listener) context.Context {
@@ -53,14 +53,14 @@ func httpShutdownOnDone(ctx, ctxServer context.Context, timeout uint32, srv *htt
 	select {
 	case <-ctx.Done():
 		// gracefully shutdown a http server
-		ctxShutdown, _ := context.WithTimeout(context.Background(), time.Duration(timeout) * time.Second)
+		ctxShutdown, _ := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 		srv.Shutdown(ctxShutdown)
 
 	case <-ctxServer.Done():
 	}
 }
 
-func try( ctx context.Context, opts options.OptionsAcceptor, retry int) {
+func try(ctx context.Context, opts options.OptionsAcceptor, retry int) {
 	const maxRecoveryRetries = 16
 
 	if retry > maxRecoveryRetries {
@@ -69,11 +69,11 @@ func try( ctx context.Context, opts options.OptionsAcceptor, retry int) {
 	}
 
 	defer func() {
-		if r := recover(); r!= nil {
+		if r := recover(); r != nil {
 			log.Println("acceptor recovered from ", r)
 			log.Println("try again")
 
-			try(ctx, opts, retry + 1)
+			try(ctx, opts, retry+1)
 		}
 	}()
 
@@ -83,11 +83,13 @@ serviceLoop:
 
 		publ, err := broker.ConnectAsPublisher(
 			formats.AMQP(
-				opts.MqHost,
-				opts.MqPort,
-				opts.MqUser,
-				opts.MqPassword,
-				opts.MqTimeout,
+				formats.ParamsAMQP{
+					Host:     opts.MqHost,
+					Port:     opts.MqPort,
+					User:     opts.MqUser,
+					Password: opts.MqPassword,
+					Timeout:  opts.MqTimeout,
+				},
 			),
 		)
 		if err != nil {
@@ -101,7 +103,7 @@ serviceLoop:
 			ctxWithData = context.WithValue(ctxWithData, contextKeyCancel, cancelServer)
 
 			log.Printf("http server is listening on: %s:%d", opts.HttpIP, opts.HttpPort)
-			srv, err := serveInBackground(ctxWithData, cancelServer, opts)
+			srv, err := serveInBackground(ctxWithData, opts)
 			if err != nil {
 				log.Println("make new http server: ", err)
 			} else {
@@ -109,7 +111,9 @@ serviceLoop:
 				httpShutdownOnDone(ctx, ctxServer, opts.HttpGracefulTimeout, srv)
 			}
 
-			publ.Close()
+			fatality.Log(
+				publ.Close(),
+			)
 		}
 
 		cancelServer()
