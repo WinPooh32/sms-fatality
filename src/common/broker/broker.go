@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -11,11 +12,11 @@ import (
 
 var (
 	DefaultPrefetchCount = 32
-	DefaultQueueName = "sms"
-	DefaultQueueArgs = amqp.Table {
+	DefaultQueueName     = "sms"
+	DefaultQueueArgs     = amqp.Table{
 		"x-queue-mode": "lazy",
-		"x-max-length": 1000,
-		"x-overflow": "reject-publish",
+		"x-max-length": math.MaxInt32,
+		"x-overflow":   "reject-publish",
 	}
 )
 
@@ -39,19 +40,19 @@ type Consumer interface {
 
 type Connection struct {
 	sync.Mutex
-	conn      *amqp.Connection
-	mqch      *amqp.Channel
-	queue     *amqp.Queue
-	delivery  <-chan amqp.Delivery
-	confirm   <-chan amqp.Confirmation
-	addr      string
+	conn     *amqp.Connection
+	mqch     *amqp.Channel
+	queue    *amqp.Queue
+	delivery <-chan amqp.Delivery
+	confirm  <-chan amqp.Confirmation
+	addr     string
 }
 
 func (c *Connection) Close() error {
 	c.Lock()
 	defer c.Unlock()
 
-	if err := c.mqch.Close(); err != nil{
+	if err := c.mqch.Close(); err != nil {
 		return fmt.Errorf("close broker channel: %w", err)
 	}
 	if err := c.conn.Close(); err != nil {
@@ -82,7 +83,7 @@ func (c *Connection) Reconnect() {
 
 	if c.delivery != nil {
 		asConsumer(c)
-	}else{
+	} else {
 		asPublisher(c)
 	}
 }
@@ -125,7 +126,7 @@ func (c *Connection) Publish(data []byte) error {
 	if c.conn == nil {
 		return fmt.Errorf("publish: amqp connection is nil")
 	}
-	if c.conn.IsClosed(){
+	if c.conn.IsClosed() {
 		return fmt.Errorf("publish: amqp connection is closed")
 	}
 
@@ -135,12 +136,12 @@ func (c *Connection) Publish(data []byte) error {
 	//}
 
 	err := c.mqch.Publish(
-		"",     // exchange
-		 c.queue.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
+		"",           // exchange
+		c.queue.Name, // routing key
+		false,        // mandatory
+		false,        // immediate
 		amqp.Publishing{
-			ContentType:  "application/octet-stream",
+			ContentType: "application/octet-stream",
 			//persistent messages will be restored to durable queues and lost on non-durable queues during server restart.
 			DeliveryMode: amqp.Persistent,
 			Body:         data,
@@ -159,12 +160,12 @@ func (c *Connection) Publish(data []byte) error {
 	//	return fmt.Errorf("commit: %w", err)
 	//}
 
-	d, ok := <- c.confirm
+	d, ok := <-c.confirm
 	if ok {
 		if !d.Ack {
 			return fmt.Errorf("nack!")
 		}
-	}else {
+	} else {
 		return fmt.Errorf("c.confirm closed")
 	}
 
