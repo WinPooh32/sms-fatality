@@ -12,9 +12,9 @@ type Configurator interface {
 }
 
 type OptionsCommon struct {
-	Config     string  `short:"c" long:"config" default:"config.ini" no-ini:"true"`
+	Config string `short:"c" long:"config" default:"config.ini" no-ini:"true"`
 
-	RestartDelay uint32  `long:"delay"   default:"5"             description:"restart delay seconds on fail"`
+	RestartDelay uint32 `long:"delay"   default:"5"             description:"restart delay seconds on fail"`
 }
 
 func (com *OptionsCommon) ConfigPath() string { return com.Config }
@@ -25,7 +25,7 @@ type OptionsMQ struct {
 	MqUser     string `long:"mquser"     default:"user"          description:"rabbitMQ username"`
 	MqPassword string `long:"mqpass"     default:"password"      description:"rabbitMQ user password"`
 	//MqQueue    string `long:"mqqueue"    default:"sms"           description:"rabbitMQ queue name"`
-	MqTimeout  uint32 `long:"mqtimeout"  default:"10"            description:"connection timeout seconds to rabbitMQ"`
+	MqTimeout uint32 `long:"mqtimeout"  default:"10"            description:"connection timeout seconds to rabbitMQ"`
 }
 
 type OptionsDB struct {

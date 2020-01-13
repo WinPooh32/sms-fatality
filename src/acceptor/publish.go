@@ -14,7 +14,7 @@ func publish(r *http.Request) error {
 		smsFieldText  = "Text"
 	)
 
-	msg := sms.SMS {
+	msg := sms.SMS{
 		Phone: r.FormValue(smsFieldPhone),
 		Body:  r.FormValue(smsFieldText),
 	}
@@ -39,4 +39,3 @@ func publish(r *http.Request) error {
 
 	return nil
 }
-

@@ -25,6 +25,6 @@ func handle_POST_SMS(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerHandlers(router *http.ServeMux) *http.ServeMux {
-	router.Handle("/sms",  recoveryMiddleware(http.HandlerFunc(handle_POST_SMS)))
+	router.Handle("/sms", recoveryMiddleware(http.HandlerFunc(handle_POST_SMS)))
 	return router
 }

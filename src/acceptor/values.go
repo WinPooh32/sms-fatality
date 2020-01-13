@@ -2,7 +2,7 @@ package main
 
 type contextValueKey int
 
-const(
+const (
 	contextKeyPublisher contextValueKey = iota
 	contextKeyCancel
 )

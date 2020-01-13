@@ -20,9 +20,9 @@ func writeToDB(queries *messages.Queries, msg sms.SMS) error {
 	ctx, _ := context.WithTimeout(context.Background(), timeoutWrite)
 	err := queries.CreateMessage(
 		ctx,
-		messages.CreateMessageParams {
+		messages.CreateMessageParams{
 			Phone: msg.Phone,
-			Body: msg.Body,
+			Body:  msg.Body,
 		},
 	)
 	if err != nil {
@@ -34,9 +34,9 @@ func writeToDB(queries *messages.Queries, msg sms.SMS) error {
 
 func processDelivery(delivery amqp.Delivery, queries *messages.Queries, dbConn *sql.DB) error {
 	const (
-		single = false
+		single  = false
 		requeue = true
-		drop = false
+		drop    = false
 	)
 
 	msg, err := sms.Decode(delivery.Body)
@@ -45,18 +45,18 @@ func processDelivery(delivery amqp.Delivery, queries *messages.Queries, dbConn *
 		return fmt.Errorf("sms.Decode: %w", err)
 	}
 
-	if !msg.PhoneValid(){
+	if !msg.PhoneValid() {
 		delivery.Nack(single, drop)
 		return fmt.Errorf("invalid phone number")
 	}
 
-	if !msg.BodyValid(){
+	if !msg.BodyValid() {
 		delivery.Nack(single, drop)
 		return fmt.Errorf("invalid message body")
 	}
 
 	err = writeToDB(queries, msg)
-	if err != nil{
+	if err != nil {
 		delivery.Nack(single, requeue)
 		return fmt.Errorf("write message to DB: %w", err)
 	}
@@ -69,10 +69,10 @@ func processDelivery(delivery amqp.Delivery, queries *messages.Queries, dbConn *
 	return nil
 }
 
-func work(ctx context.Context, dbConn *sql.DB, consumer broker.Consumer){
+func work(ctx context.Context, dbConn *sql.DB, consumer broker.Consumer) {
 	var (
 		counter, average uint64
-		ticker = time.NewTicker(time.Minute)
+		ticker           = time.NewTicker(time.Minute)
 	)
 
 	// prepared database queries for messages

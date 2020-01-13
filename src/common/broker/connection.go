@@ -6,7 +6,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func connect(addr string, prefetchCount int) (*amqp.Connection, *amqp.Channel, error){
+func connect(addr string, prefetchCount int) (*amqp.Connection, *amqp.Channel, error) {
 	conn, err := amqp.Dial(addr)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connect to RabbitMQ: %w", err)
@@ -31,10 +31,10 @@ func declareQueue(channel *amqp.Channel, queueName string, args amqp.Table) (*am
 	q, err := channel.QueueDeclare(
 		queueName, // name
 		durable,   // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		args,     // arguments
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		args,      // arguments
 	)
 	if err != nil {
 		return nil, fmt.Errorf("declare a queue: %w", err)
@@ -46,12 +46,12 @@ func declareQueue(channel *amqp.Channel, queueName string, args amqp.Table) (*am
 func startConsume(channel *amqp.Channel, queueName string, args amqp.Table) (<-chan amqp.Delivery, error) {
 	msgs, err := channel.Consume(
 		queueName, // queue
-		"",     // consumer
-		false,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		args,    // args
+		"",        // consumer
+		false,     // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		args,      // args
 	)
 	if err != nil {
 		return nil, fmt.Errorf("register a consumer: %w", err)
